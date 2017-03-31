@@ -18,6 +18,9 @@
 #include <iostream>
 #include <limits>
 #include <queue>
+#include "Leftist_heap.h"
+#include "ece250.h"
+#include "Exception.h"
 // include whatever classes you want
 
 class Weighted_graph {
@@ -29,6 +32,8 @@ class Weighted_graph {
 		int total_edges;
 		int mapSize;
 		static const double INF;
+	    Leftist_heap<int>* queue;
+
 
 	public:
 		Weighted_graph( int = 50 );
@@ -72,7 +77,7 @@ Weighted_graph::Weighted_graph( int size ){
     	  matrixMap[0][0] = 0.0;
 
       }
-
+      queue =new Leftist_heap<int>();
       total_edges = 0;
       mapSize = size;
 
@@ -84,6 +89,8 @@ Weighted_graph::~Weighted_graph( ){
 	  }
 	delete [] matrixMap;
 	delete [] degreeArray;
+	delete queue;
+
 }
 
 int Weighted_graph:: edge_count() const{
@@ -104,64 +111,93 @@ double Weighted_graph:: adjacent(int m, int n ) const{
 		{
 			throw illegal_argument();
 		}
-	if(matrixMap[m][n] == INF)
-		{
-			return 0.0;
-		}
+//	if(matrixMap[m][n] == INF)
+//		{
+//			return ;
+//		}
+	if(m==n)
+			{
+				return 0.0;
+			}
 	 return matrixMap[m][n];
 }
 
 double Weighted_graph::distance(int m, int n) const{
-	bool* isVisited = new bool [mapSize];
+	int* isVisited = new int [mapSize];
 	double* distances = new double [mapSize];
-    std::priority_queue<int>  queue ;
-
-	if(m ==n){
-	 return 0.0;
+//	if ( degree(n) == 0 || degree(m) == 0) throw illegal_argument();
+		//If m or n are invalid, throw exception.
+	if(n<0 || n>= mapSize || m<0 || m>=mapSize)	{
+			throw illegal_argument();
 	}
+	if(m ==n){
+
+	 return 0.0;
+
+	}
+
 
 	for(int i = 0; i < mapSize; i++){
 		distances[i] = INF;
-		isVisited[i] = false;
+		isVisited[i] = 0;
 	}
 	        int startNode = m;
+	        int nextNode ;
 	        int goalNode = n;
-	        distances[startNode] = 0;
+	        distances[startNode] = 0.0;
+
+//	        if (degree(startNode) == 0) {
+//
+//	        	return INF;
+//
+//	        }  this causes memeory leak???
 
 
-	        queue.push(startNode);
 
-	        while (!queue.empty()) {
+	        queue->push(startNode,distances[startNode]);
+
+	        while (!queue->empty()) {
+
+	            int nextNode = 	queue->top();
+
+	            queue->pop();
 
 
-	            int currentNode = queue.top();
-	            queue.pop();
-	            if ((isVisited[currentNode] == true)){
+	            if (nextNode == goalNode) break;
+
+	            if ((isVisited[nextNode] == 1) ){//|| degree(nextNode) == 0){
 	                continue;
 	             }
-	            else{
-	            	isVisited[currentNode] == true;//add(currentNode);
-	            }
 
-	            for(int j = 0; j< mapSize;j++){
-	                if( adjacent(currentNode,j) != 0){
-	                	if(isVisited[j] ==true){
+
+
+				if(isVisited[nextNode]== 0) {
+					isVisited[nextNode]= 1;
+	                for(int j = 0; j< mapSize;j++){
+
+	                	if( adjacent(nextNode,j) != INF){
+
+
+	                	    if(isVisited[j] == 1){
 	                		continue;
-	                	}
+	                	   }
 
-	                	if (distances[currentNode] +  matrixMap[currentNode][j] < distances[j]) {
-	                		queue.push(j);
-	                		distances[j] = distances[currentNode] +  matrixMap[currentNode][j];
- 	 	 	 	 	   }
+	                	   if (distances[nextNode] +  adjacent(nextNode,j) < distances[j] ) {
+
+	                		distances[j] = distances[nextNode] +  adjacent(nextNode,j);
+            		        queue->push(j,distances[j]);
+
+ 	 	 	 	 	       }
+	                    }
 	               }
 	            }
 	        }
 
-	        double store = distances[goalNode];
+	        double dis = distances[goalNode];
 	       	delete [] distances;
 	       	delete [] isVisited;
 
-	       return store;
+	       return dis;
 
 }
 
